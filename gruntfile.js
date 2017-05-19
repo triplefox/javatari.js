@@ -89,7 +89,7 @@ module.exports = function (grunt) {
             emuFinal: {
                 src: [
                     "src/main/Javatari.js",
-                    "temp/javatari.part.min.js"
+                    "temp/javatari.part.js"
                 ],
                 dest: "temp/javatari.js"
             },
@@ -109,10 +109,8 @@ module.exports = function (grunt) {
                     maxLineLen: 7900,
                     mangle: {
                         toplevel: true,
-                        screw_ie8: true
                     },
                     compress: {
-                        screw_ie8: true,
                         sequences: true,
                         dead_code: true,
                         drop_debugger: true,

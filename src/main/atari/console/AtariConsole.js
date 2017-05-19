@@ -12,6 +12,7 @@ jt.AtariConsole = function() {
     }
 
     this.powerOn = function() {
+		self.flushCorruption();
         if (this.powerIsOn) this.powerOff();
         bus.powerOn();
         this.powerIsOn = true;
@@ -63,6 +64,41 @@ jt.AtariConsole = function() {
     this.isSystemPaused = function() {
         return systemPaused;
     };
+	
+	this.flushCorruption = function() {
+		corruptCheckPC0 = -1;
+		corruptCheckPC1 = -2;
+		corruptCheckpoint = null;
+		corruptCheckpointTime = 0;
+	}
+	
+	this.doCorruptBytes = function() {
+		// recovery still fails because CPU loses the
+		// instruction set or somesuch.
+		// we may need to wait for one frame 
+		if (corruptCheckPC0 == corruptCheckPC1 && 
+			corruptCheckpoint != null && 
+			corruptCheckpointTime <= 0) {
+			var cp = corruptCheckpoint;
+			loadState(cp);
+			corruptCheckpointTime = 256;
+            self.showOSD("Recovered", true);
+		}
+		else if (corruptCheckpointTime <= 0) {
+			corruptCheckpoint = saveState();
+			corruptCheckpointTime = 256;
+			corruptCheckPC0 = cpu.PC;
+			console.trace("checked in");
+		}
+		else if (corruptCheckpointTime <= 127) {
+			corruptCheckPC1 = cpu.PC;
+		} else {
+			corruptCheckPC0 = cpu.PC;
+			corruptCheckPC1 = cpu.PC;
+		}
+		corruptCheckpointTime -= 1;
+		ram.write(Math.floor(Math.random() * (128)), Math.floor(Math.random() * (256)));
+	};
 
     this.videoClockPulse = function() {
         if (systemPaused) return;
@@ -70,7 +106,7 @@ jt.AtariConsole = function() {
         consoleControlsSocket.controlsClockPulse();
 
         if (!self.powerIsOn) return;
-
+		
         if (videoPulldown.steps === 1) {
             // Simple pulldown with 1:1 cadence
             videoFrame();
@@ -83,6 +119,10 @@ jt.AtariConsole = function() {
                 videoFrame();
             }
         }
+		
+		// corruption waits until we've rendered at least
+		// one frame so that it's initialized.
+		if (corruptBytes) self.doCorruptBytes();
 
         // Finish audio signal (generate any missing samples to adjust to sample rate)
         audioSocket.audioFinishFrame();
@@ -291,6 +331,12 @@ jt.AtariConsole = function() {
 
     var speedControl = 1;
     var alternateSpeed = false;
+	
+	var corruptBytes = true;
+	var corruptCheckpoint;
+	var corruptCheckpointTime = 0;
+	var corruptCheckPC0 = -1;
+	var corruptCheckPC1 = -2;
 
     var mainVideoClock;
     var cpu;

@@ -1717,6 +1717,8 @@ jt.M6502 = function() {
     // Savestate  -------------------------------------------
 
     this.saveState = function() {
+		if (T == -1)
+			throw "saveState failed: CPU is not initialized";
         return {
             PC: PC, A: A, X: X, Y: Y, SP: SP,
             N: N, V: V, D: D, I: I, Z: Z, C: C,
@@ -1734,6 +1736,8 @@ jt.M6502 = function() {
         branchOffset = state.bo; branchOffsetCrossAdjust = state.boa;
 
         instruction = instructions[opcode];
+		if (instruction == null)
+			throw "loadState failed: no instruction";
     };
 
 
