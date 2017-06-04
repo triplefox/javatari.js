@@ -19,8 +19,8 @@ jt.Pia = function() {
     };
 
     this.read = function(address) {
+		this.read_recently = true;
         var reg = address & ADDRESS_MASK;
-
         if (reg === 0x04 || reg === 0x06) { readFromINTIM(); return INTIM; }
         if (reg === 0x00) return SWCHA;
         if (reg === 0x02) return SWCHB;
@@ -164,6 +164,7 @@ jt.Pia = function() {
     // State Variables ----------------------------------------------
 
     this.debug = false;
+	this.read_recently = false;
 
     var bus;
 

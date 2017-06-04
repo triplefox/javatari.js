@@ -66,38 +66,34 @@ jt.AtariConsole = function() {
     };
 	
 	this.flushCorruption = function() {
-		corruptCheckPC0 = -1;
-		corruptCheckPC1 = -2;
-		corruptCheckpoint = null;
-		corruptCheckpointTime = 0;
+		corruptCheckpoint = [];
+		corruptCheckpointTime = -1;
 	}
 	
 	this.doCorruptBytes = function() {
 		// recovery still fails because CPU loses the
 		// instruction set or somesuch.
 		// we may need to wait for one frame 
-		if (corruptCheckPC0 == corruptCheckPC1 && 
-			corruptCheckpoint != null && 
-			corruptCheckpointTime <= 0) {
-			var cp = corruptCheckpoint;
+		if (corruptCheckpoint.length > 0 && 
+			corruptCheckpointTime > 8) {
+			var cp = corruptCheckpoint[0];
 			loadState(cp);
-			corruptCheckpointTime = 256;
             self.showOSD("Recovered", true);
 		}
-		else if (corruptCheckpointTime <= 0) {
-			corruptCheckpoint = saveState();
-			corruptCheckpointTime = 256;
-			corruptCheckPC0 = cpu.PC;
+		else if (corruptCheckpointTime < 0) {
+			corruptCheckpoint.push(saveState());
+			if (corruptCheckpoint.length > 100)
+				corruptCheckpoint.shift();
+			corruptCheckpointTime = 0;
 			console.trace("checked in");
 		}
-		else if (corruptCheckpointTime <= 127) {
-			corruptCheckPC1 = cpu.PC;
-		} else {
-			corruptCheckPC0 = cpu.PC;
-			corruptCheckPC1 = cpu.PC;
+		else {
+			corruptCheckpointTime += 1;
 		}
-		corruptCheckpointTime -= 1;
-		ram.write(Math.floor(Math.random() * (128)), Math.floor(Math.random() * (256)));
+		var position = Math.floor(Math.random() * (128));
+		var value = Math.floor(Math.random() * (256));
+		var original_value = ram.read(position);
+		ram.write(position, (original_value+1)%256);
 	};
 
     this.videoClockPulse = function() {
@@ -131,7 +127,10 @@ jt.AtariConsole = function() {
     function videoFrame() {
         if (userPaused && userPauseMoreFrames-- <= 0) return;
         if (videoStandardAutoDetectionInProgress) videoStandardAutoDetectionTry();
+		pia.read_recently = false;
         tia.frame();
+		if (pia.read_recently)
+			corruptCheckpointTime = -1;
     }
 
     this.getCartridgeSocket = function() {
@@ -335,8 +334,6 @@ jt.AtariConsole = function() {
 	var corruptBytes = true;
 	var corruptCheckpoint;
 	var corruptCheckpointTime = 0;
-	var corruptCheckPC0 = -1;
-	var corruptCheckPC1 = -2;
 
     var mainVideoClock;
     var cpu;
