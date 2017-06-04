@@ -1,3 +1,9 @@
+# Javatari Glitch Extensions
+
+This is a modified version of **Javatari** which automatically glitches the RAM of the Atari each frame. 
+
+Crash detection and restore functionality is also included to aid in productive glitching.
+
 # Javatari
 
 **Javatari** is a new cross platform Atari 2600 emulator designed for the Web.
